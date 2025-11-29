@@ -1,0 +1,61 @@
+services:
+  # Base de Datos PostgreSQL
+  db:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: usuario_administrador
+      POSTGRES_PASSWORD: contrasena_postgres123
+      POSTGRES_DB: administrador_proyectos
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - administrador_proyectos_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U usuario_administrador -d administrador_proyectos"]
+      interval: 5s
+      retries: 10
+
+  # Backend API con Java Spring Boot
+  app:
+    image: maven:3.9.6-eclipse-temurin-17
+    working_dir: /app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/administrador_proyectos
+      SPRING_DATASOURCE_USERNAME: usuario_administrador
+      SPRING_DATASOURCE_PASSWORD: contrasena_postgres123
+      # --- Configuración para Devtools en Docker ---
+      # Asegura que Devtools escuche y reinicie la aplicación al detectar cambios
+      SPRING_DEVTOOLS_RESTART_ENABLED: 'true'
+      # Configuración de seguridad para producción
+      JWT_SECRET: TuClaveSecretaJWT_32CaracteresSegura
+      JWT_EXPIRATION: 86400000
+    ports:
+      - "8080:8080"
+    networks:
+      - administrador_proyectos_network
+    volumes:
+      # 4. ¡La clave! Montamos TODO el código de la API
+      - ./backend-api:/app
+      # 5. (Opcional pero muy recomendado) Cachear las dependencias de Maven
+      - m2_cache:/root/.m2
+      # 6. Ejecutamos la app con Maven. Devtools se encargará del hot reload.
+      #    (Asegúrate de tener el 'Maven Wrapper' (mvnw) en tu proyecto backend-api)
+    command: >
+      sh -c "./mvnw spring-boot:run -Dspring-boot.run.profiles=insecure"
+
+# Red para contenedores
+networks:
+  administrador_proyectos_network:
+    driver: bridge
+
+# Volumen de almacenamiento
+volumes:
+  pgdata: {}
+  m2_cache: {}
+
