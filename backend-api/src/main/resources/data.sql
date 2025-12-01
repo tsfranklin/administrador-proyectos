@@ -9,7 +9,8 @@ INSERT INTO rol (id_rol, nombre) VALUES
 INSERT INTO usuario (id_usuario, nombre, email, contrasena_hash, fecha_registro, activo, telefono, id_rol) VALUES
 (1, 'Admin Principal', 'admin@taskflow.com', '$2a$12$KQZ4Y9X0/0wDdJ5/4e8f2u8dX7Z7b7QZ4Y9X0/0wDdJ5/4e8f2u8dX7Z7b7QZ4', NOW(), TRUE, '555-0001', 1),
 (2, 'Gestor Alpha', 'gestor.alpha@taskflow.com', '$2a$12$XhYl0qZJh0wDdJ5/4e8f2u8dX7Z7b7QZ4Y9X0/0wDdJ5/4e8f2u8dX7Z7b7QZ4', NOW(), TRUE, '555-0002', 2),
-(3, 'Desarrollador Senior', 'dev.senior@taskflow.com', '$2a$12$XhYl0qZJh0wDdJ5/4e8f2u8dX7Z7b7QZ4Y9X0/0wDdJ5/4e8f2u8dX7Z7b7QZ4', NOW(), TRUE, '555-0003', 3);
+(3, 'Desarrollador Senior', 'dev.senior@taskflow.com', '$2a$12$XhYl0qZJh0wDdJ5/4e8f2u8dX7Z7b7QZ4Y9X0/0wDdJ5/4e8f2u8dX7Z7b7QZ4', NOW(), TRUE, '555-0003', 3),
+(4, 'Usuario Prueba', 'test@taskflow.com', '123456', NOW(), TRUE, '555-9999', 1);
 
 -- Proyectos
 INSERT INTO proyecto (id_proyecto, nombre, descripcion, fecha_inicio, fecha_fin, activo, id_responsable) VALUES

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - TaskFlow Solutions</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/auth.css">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="logo-area">
+                <div class="logo-text">
+                    TaskFlow
+                    <span>SOLUTIONS</span>
+                </div>
+            </div>
+
+            <h1 class="auth-title">TaskFlow</h1>
+            <h2 class="auth-subtitle">Autenticación</h2>
+
+            <form id="loginForm">
+                <div class="input-group">
+                    <label for="email">Correo electrónico o número móvil</label>
+                    <input type="text" id="email" placeholder="correo-usuario@gmail.com" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="password">Contraseña</label>
+                    <div style="position: relative;">
+                        <input type="password" id="password" placeholder="••••••••" required>
+                        <!-- Icono de ojo podría ir aquí -->
+                    </div>
+                </div>
+
+                <div class="forgot-password">
+                    <a href="#">Olvidaste tu contraseña?</a>
+                </div>
+
+                <button type="submit" class="btn-primary">Ingresar a TaskFlow</button>
+            </form>
+
+            <div class="auth-links">
+                <div class="auth-link-item">
+                    <span>Solicitar URL de registro</span>
+                    <span>></span>
+                </div>
+                <div class="auth-link-item">
+                    <span>Políticas de privacidad</span>
+                    <span>></span>
+                </div>
+                <div class="auth-link-item">
+                    <span>Necesitas soporte para acceso?</span>
+                    <span>></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>
