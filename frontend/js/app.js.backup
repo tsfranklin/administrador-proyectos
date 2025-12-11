@@ -1,0 +1,416 @@
+const API_URL = 'http://localhost:8080/api/v1';
+
+// Manejo de Login
+const loginForm = document.getElementById('loginForm');
+if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        try {
+            const response = await fetch(`${API_URL}/auth/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, contrasena: password })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.usuario));
+                window.location.href = 'dashboard.html';
+            } else {
+                const error = await response.text();
+                alert('Error al iniciar sesión: ' + error);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error de conexión con el servidor');
+        }
+    });
+}
+
+// Manejo de Registro
+const registerForm = document.getElementById('registerForm');
+if (registerForm) {
+    registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const nombre = document.getElementById('nombre').value;
+        const email = document.getElementById('email').value;
+        const telefono = document.getElementById('telefono').value;
+        const password = document.getElementById('password').value;
+        const idRol = document.getElementById('rol').value;
+        const codigo = document.getElementById('codigo').value;
+
+        const payload = {
+            nombre,
+            email,
+            telefono,
+            contrasena: password,
+            idRol: parseInt(idRol),
+            codigo: codigo || null
+        };
+
+        try {
+            const response = await fetch(`${API_URL}/auth/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                alert('Registro exitoso. Ahora puedes iniciar sesión.');
+                window.location.href = 'index.html';
+            } else {
+                const error = await response.text();
+                alert('Error en el registro: ' + error);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error de conexión con el servidor');
+        }
+    });
+}
+
+// Verificar autenticación en páginas protegidas
+function checkAuth() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        window.location.href = 'index.html';
+    }
+    return token;
+}
+
+// Cerrar sesión
+function logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = 'index.html';
+}
+
+// Cargar usuario en el header
+function loadUserProfile() {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+        const user = JSON.parse(userStr);
+        const userNameElement = document.getElementById('userName');
+        const userRoleElement = document.getElementById('userRole');
+        const headerUserName = document.getElementById('headerUserName');
+
+        if (userNameElement) userNameElement.innerText = user.nombre;
+        if (userRoleElement) userRoleElement.innerText = user.rol;
+        if (headerUserName) headerUserName.innerText = user.nombre;
+
+        // Mostrar botones según rol
+        const btnCrearProyecto = document.getElementById('btnCrearProyecto');
+        if (btnCrearProyecto && user.rol === 'ADMINISTRADOR') {
+            btnCrearProyecto.style.display = 'block';
+        }
+
+        const btnCrearTarea = document.getElementById('btnCrearTarea');
+        if (btnCrearTarea && (user.rol === 'GESTOR_PROYECTO' || user.rol === 'TRABAJADOR')) {
+            btnCrearTarea.style.display = 'block';
+        }
+    }
+}
+
+// Cargar datos del Dashboard
+async function loadDashboardData() {
+    const projectsList = document.getElementById('projectsList');
+    if (!projectsList) return;
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/proyecto`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const proyectos = await response.json();
+            projectsList.innerHTML = '';
+
+            if (proyectos.length === 0) {
+                projectsList.innerHTML = '<p>No hay proyectos activos.</p>';
+                return;
+            }
+
+            proyectos.forEach(proyecto => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                        <h3 style="font-size: 1.1rem;">${proyecto.nombre}</h3>
+                        <span class="tag ${proyecto.activo ? 'tag-low' : 'tag-high'}">${proyecto.activo ? 'Activo' : 'Inactivo'}</span>
+                    </div>
+                    <p style="color: #666; font-size: 0.9rem; margin-bottom: 15px;">${proyecto.descripcion || 'Sin descripción'}</p>
+                    <div style="font-size: 0.8rem; color: #888; margin-bottom: 15px;">
+                        <p><i class="far fa-calendar"></i> Inicio: ${new Date(proyecto.fechaInicio).toLocaleDateString()}</p>
+                        <p><i class="far fa-user"></i> Responsable: ${proyecto.responsable.nombre}</p>
+                        <p style="margin-top: 5px; font-weight: bold; color: var(--primary-color);">Código: ${proyecto.codigoRegistro || 'N/A'}</p>
+                    </div>
+                    <button class="btn btn-secondary" style="width: 100%; padding: 8px;">Ver Detalles</button>
+                `;
+                projectsList.appendChild(card);
+            });
+        }
+    } catch (error) {
+        console.error('Error cargando proyectos:', error);
+        projectsList.innerHTML = '<p>Error al cargar proyectos.</p>';
+    }
+}
+
+// Cargar Tablero Kanban
+async function loadKanbanBoard() {
+    const columns = {
+        'PENDIENTE': document.getElementById('col-PENDIENTE'),
+        'EN_PROGRESO': document.getElementById('col-EN_PROGRESO'),
+        'BLOQUEADA': document.getElementById('col-BLOQUEADA'),
+        'COMPLETADA': document.getElementById('col-COMPLETADA')
+    };
+
+    if (!columns['PENDIENTE']) return; // No estamos en la página kanban
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/tarea`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const tareas = await response.json();
+
+            // Limpiar columnas
+            Object.values(columns).forEach(col => col.innerHTML = '');
+
+            // Reset contadores
+            const counts = { 'PENDIENTE': 0, 'EN_PROGRESO': 0, 'BLOQUEADA': 0, 'COMPLETADA': 0 };
+
+            tareas.forEach(tarea => {
+                const col = columns[tarea.estado];
+                if (col) {
+                    counts[tarea.estado]++;
+                    const card = document.createElement('div');
+                    card.className = 'task-card';
+                    card.draggable = true;
+                    card.ondragstart = (e) => drag(e, tarea.idTarea);
+
+                    const prioridadClass = tarea.prioridad === 'ALTA' ? 'tag-high' : (tarea.prioridad === 'MEDIA' ? 'tag-medium' : 'tag-low');
+
+                    card.onclick = (e) => {
+                        // Evitar abrir modal si se hace clic en los botones de mover
+                        if (e.target.tagName !== 'BUTTON') {
+                            openTaskDetails(tarea.idTarea);
+                        }
+                    };
+
+                    card.innerHTML = `
+                        <div class="task-tags">
+                            <span class="tag ${prioridadClass}">${tarea.prioridad}</span>
+                            <span class="tag" style="background: #eee;">${tarea.codigoTarea || 'N/A'}</span>
+                        </div>
+                        <h4 style="margin-bottom: 8px;">${tarea.titulo}</h4>
+                        <p style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">${tarea.descripcion || ''}</p>
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #888;">
+                            <span><i class="far fa-clock"></i> ${new Date(tarea.fechaLimite).toLocaleDateString()}</span>
+                            ${tarea.asignado ? `<span title="${tarea.asignado.nombre}" style="background: #333; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">${tarea.asignado.nombre.charAt(0)}</span>` : ''}
+                        </div>
+                        <div style="margin-top: 10px; display: flex; gap: 5px;">
+                            ${tarea.estado !== 'PENDIENTE' ? `<button onclick="moverTarea(${tarea.idTarea}, 'PENDIENTE')" style="font-size: 0.7rem; z-index: 2;">⏮</button>` : ''}
+                            ${tarea.estado !== 'EN_PROGRESO' ? `<button onclick="moverTarea(${tarea.idTarea}, 'EN_PROGRESO')" style="font-size: 0.7rem; z-index: 2;">▶</button>` : ''}
+                            ${tarea.estado !== 'COMPLETADA' ? `<button onclick="moverTarea(${tarea.idTarea}, 'COMPLETADA')" style="font-size: 0.7rem; z-index: 2;">✅</button>` : ''}
+                        </div>
+                    `;
+                    col.appendChild(card);
+                }
+            });
+
+            // Actualizar contadores visuales
+            Object.keys(counts).forEach(key => {
+                const badge = document.getElementById(`count-${key}`);
+                if (badge) badge.innerText = counts[key];
+            });
+        }
+    } catch (error) {
+        console.error('Error cargando tareas:', error);
+    }
+}
+
+// Abrir detalles de tarea
+async function openTaskDetails(id) {
+    const modal = document.getElementById('taskDetailsModal');
+    if (!modal) return;
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/tarea/${id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const tarea = await response.json();
+            document.getElementById('detailTitulo').innerText = tarea.titulo;
+            document.getElementById('detailDescripcion').innerText = tarea.descripcion;
+            document.getElementById('detailEstado').innerText = tarea.estado;
+            document.getElementById('detailPrioridad').innerText = tarea.prioridad;
+
+            // Guardar ID de tarea actual para enviar comentarios
+            modal.dataset.taskId = id;
+
+            // Cargar comentarios (Simulado por ahora, ya que no tenemos endpoint de comentarios en frontend aún)
+            // TODO: Implementar endpoint real de comentarios
+            const commentsList = document.getElementById('commentsList');
+            commentsList.innerHTML = '<p style="color: #999; font-style: italic;">No hay comentarios aún.</p>';
+
+            modal.style.display = 'flex';
+        }
+    } catch (error) {
+        console.error('Error cargando detalles:', error);
+    }
+}
+
+// Manejo de nuevo comentario
+const addCommentForm = document.getElementById('addCommentForm');
+if (addCommentForm) {
+    addCommentForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const texto = document.getElementById('newComment').value;
+        const taskId = document.getElementById('taskDetailsModal').dataset.taskId;
+        const user = JSON.parse(localStorage.getItem('user'));
+
+        if (!texto || !taskId) return;
+
+        // Aquí iría la llamada al backend para guardar el comentario
+        // Por ahora, solo lo agregamos visualmente
+        const commentsList = document.getElementById('commentsList');
+        if (commentsList.innerHTML.includes('No hay comentarios')) commentsList.innerHTML = '';
+
+        const commentDiv = document.createElement('div');
+        commentDiv.style.marginBottom = '10px';
+        commentDiv.style.padding = '10px';
+        commentDiv.style.background = '#f9f9f9';
+        commentDiv.style.borderRadius = '8px';
+        commentDiv.innerHTML = `
+            <p style="font-weight: 600; font-size: 0.8rem; margin-bottom: 4px;">${user.nombre} <span style="font-weight: 400; color: #999;">Ahora</span></p>
+            <p style="font-size: 0.9rem;">${texto}</p>
+        `;
+        commentsList.appendChild(commentDiv);
+        document.getElementById('newComment').value = '';
+    });
+}
+
+// Mover tarea (simple, sin drag & drop complejo por ahora)
+async function moverTarea(id, nuevoEstado) {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/tarea/${id}/mover-estado?nuevoEstado=${nuevoEstado}`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            loadKanbanBoard(); // Recargar tablero
+        } else {
+            alert('Error al mover la tarea');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+// Drag & Drop Helpers
+function drag(ev, id) {
+    ev.dataTransfer.setData("text", id);
+    createProjectForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const nombre = document.getElementById('projNombre').value;
+        const descripcion = document.getElementById('projDesc').value;
+        const fechaFin = document.getElementById('projFechaFin').value;
+
+        // Necesitamos el ID del responsable (usuario actual)
+        const user = JSON.parse(localStorage.getItem('user'));
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/proyecto`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    nombre,
+                    descripcion,
+                    fechaFin: fechaFin || null,
+                    idResponsable: user.idUsuario,
+                    activo: true
+                })
+            });
+
+            if (response.ok) {
+                const proyecto = await response.json();
+                // Mostrar el código generado
+                alert(`✅ Proyecto creado con éxito!\n\n📋 Código del proyecto: ${proyecto.codigoRegistro}\n\nComparte este código con los gestores para que puedan registrarse.`);
+                closeCreateProjectModal();
+                loadDashboardData();
+            } else {
+                const error = await response.text();
+                alert('❌ Error al crear proyecto: ' + error);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('❌ Error de conexión con el servidor');
+        }
+    });
+}
+
+// Manejo de creación de tareas
+const createTaskForm = document.getElementById('createTaskForm');
+if (createTaskForm) {
+    createTaskForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const titulo = document.getElementById('taskTitulo').value;
+        const descripcion = document.getElementById('taskDesc').value;
+        const idProyecto = document.getElementById('taskProyectoId').value;
+        const prioridad = document.getElementById('taskPrioridad').value;
+        const fechaLimite = document.getElementById('taskFechaLimite').value;
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_URL}/tarea`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    titulo,
+                    descripcion,
+                    idProyecto: parseInt(idProyecto),
+                    prioridad,
+                    estado: 'PENDIENTE',
+                    fechaLimite: fechaLimite || null
+                })
+            });
+
+            if (response.ok) {
+                const tarea = await response.json();
+                // Mostrar el código generado
+                alert(`✅ Tarea creada con éxito!\n\n📋 Código de la tarea: ${tarea.codigoTarea}\n\nComparte este código con los trabajadores/colaboradores para que puedan registrarse.`);
+                closeCreateTaskModal();
+                loadKanbanBoard();
+            } else {
+                const error = await response.text();
+                alert('❌ Error al crear tarea: ' + error);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('❌ Error de conexión con el servidor');
+        }
+    });
+}

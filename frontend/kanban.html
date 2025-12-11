@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban - TaskFlow Solutions</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="logo" style="margin-bottom: 40px; text-align: left;">
+                <h2 style="font-size: 1.5rem;">TaskFlow <span style="color: var(--primary-color);">.</span></h2>
+            </div>
+
+            <nav>
+                <a href="dashboard.html" class="nav-item">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+                <a href="kanban.html" class="nav-item active">
+                    <i class="fas fa-columns"></i> Mis Tareas
+                </a>
+                <a href="fichajes.html" class="nav-item">
+                    <i class="fas fa-clock"></i> Fichajes
+                </a>
+                <a href="proyectos.html" class="nav-item">
+                    <i class="fas fa-project-diagram"></i> Proyectos
+                </a>
+                <a href="equipo.html" class="nav-item">
+                    <i class="fas fa-users"></i> Equipo
+                </a>
+            </nav>
+
+            <div style="margin-top: auto;">
+                <div class="user-profile" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+                    <div
+                        style="width: 40px; height: 40px; background: #ddd; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div>
+                        <p id="userName" style="font-weight: 600; font-size: 0.9rem;">Cargando...</p>
+                        <p id="userRole" style="font-size: 0.8rem; color: #666;">...</p>
+                    </div>
+                </div>
+                <button onclick="logout()" class="btn btn-secondary" style="width: 100%; font-size: 0.9rem;">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                <div>
+                    <h1 id="projectTitle">Tablero de Tareas - Proyecto Demo</h1>
+                    <p style="color: var(--text-light);">Gestiona el flujo de trabajo de tu equipo.</p>
+                </div>
+                <button class="btn btn-primary" onclick="showCreateTaskModal()" id="btnCrearTarea"
+                    style="display: none;">
+                    <i class="fas fa-plus"></i> Nueva Tarea
+                </button>
+            </header>
+
+            <div class="kanban-board">
+                <!-- Columna Pendiente -->
+                <div class="kanban-column">
+                    <div class="column-header">
+                        <h3>Pendiente</h3>
+                        <span class="tag tag-medium" id="count-PENDIENTE">0</span>
+                    </div>
+                    <div id="col-PENDIENTE" class="task-list">
+                        <!-- Tasks go here -->
+                    </div>
+                </div>
+
+                <!-- Columna En Progreso -->
+                <div class="kanban-column">
+                    <div class="column-header">
+                        <h3>En Progreso</h3>
+                        <span class="tag tag-info" style="background: #E1F5FE; color: #0288D1;"
+                            id="count-EN_PROGRESO">0</span>
+                    </div>
+                    <div id="col-EN_PROGRESO" class="task-list">
+                        <!-- Tasks go here -->
+                    </div>
+                </div>
+
+                <!-- Columna Bloqueada -->
+                <div class="kanban-column">
+                    <div class="column-header">
+                        <h3>Bloqueada</h3>
+                        <span class="tag tag-high" id="count-BLOQUEADA">0</span>
+                    </div>
+                    <div id="col-BLOQUEADA" class="task-list">
+                        <!-- Tasks go here -->
+                    </div>
+                </div>
+
+                <!-- Columna Completada -->
+                <div class="kanban-column">
+                    <div class="column-header">
+                        <h3>Completada</h3>
+                        <span class="tag tag-low" id="count-COMPLETADA">0</span>
+                    </div>
+                    <div id="col-COMPLETADA" class="task-list">
+                        <!-- Tasks go here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Crear Tarea -->
+    <div id="createTaskModal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto;">
+        <div style="display: flex; align-items: center; justify-content: center; min-height: 100%; padding: 20px;">
+            <div class="card" style="width: 100%; max-width: 500px; margin: auto;">
+                <h2 style="margin-bottom: 20px;">Nueva Tarea</h2>
+                <form id="createTaskForm">
+                    <div class="form-group">
+                        <label>Título</label>
+                        <input type="text" id="taskTitulo" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción</label>
+                        <textarea id="taskDesc" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Proyecto</label>
+                        <select id="taskProyectoId" class="form-control" required>
+                            <option value="">Selecciona un proyecto...</option>
+                            <!-- Los proyectos se cargarán dinámicamente -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Prioridad</label>
+                        <select id="taskPrioridad" class="form-control">
+                            <option value="ALTA">Alta</option>
+                            <option value="MEDIA" selected>Media</option>
+                            <option value="BAJA">Baja</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha Límite</label>
+                        <input type="datetime-local" id="taskFechaLimite" class="form-control">
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                        <button type="button" class="btn btn-secondary"
+                            onclick="closeCreateTaskModal()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Crear Tarea</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Tarea -->
+    <div id="editTaskModal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto;">
+        <div style="display: flex; align-items: center; justify-content: center; min-height: 100%; padding: 20px;">
+            <div class="card" style="width: 100%; max-width: 500px; margin: auto;">
+                <h2 style="margin-bottom: 20px;">Editar Tarea</h2>
+                <form id="editTaskForm">
+                    <input type="hidden" id="editTaskId">
+                    <div class="form-group">
+                        <label>Título</label>
+                        <input type="text" id="editTaskTitulo" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción</label>
+                        <textarea id="editTaskDesc" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Proyecto</label>
+                        <select id="editTaskProyectoId" class="form-control" required>
+                            <option value="">Selecciona un proyecto...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Prioridad</label>
+                        <select id="editTaskPrioridad" class="form-control">
+                            <option value="ALTA">Alta</option>
+                            <option value="MEDIA">Media</option>
+                            <option value="BAJA">Baja</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha Límite</label>
+                        <input type="datetime-local" id="editTaskFechaLimite" class="form-control">
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                        <button type="button" class="btn btn-secondary" onclick="closeEditTaskModal()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Detalles Tarea -->
+    <div id="taskDetailsModal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto;">
+        <div style="display: flex; align-items: center; justify-content: center; min-height: 100%; padding: 20px;">
+            <div class="card" style="width: 100%; max-width: 600px; margin: auto;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                    <h2 id="detailTitulo">Título Tarea</h2>
+                    <button onclick="closeTaskDetailsModal()"
+                        style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <span class="tag" id="detailEstado">ESTADO</span>
+                    <span class="tag" id="detailPrioridad">PRIORIDAD</span>
+                </div>
+
+                <p id="detailDescripcion" style="color: #666; margin-bottom: 20px;">Descripción...</p>
+
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+                <h3>Comentarios</h3>
+                <div id="commentsList" style="margin-bottom: 20px; max-height: 200px; overflow-y: auto;">
+                    <!-- Comentarios -->
+                </div>
+
+                <form id="addCommentForm" style="display: flex; gap: 10px;">
+                    <input type="text" id="newComment" class="form-control" placeholder="Escribe un comentario..."
+                        required>
+                    <button type="submit" class="btn btn-primary">Enviar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/edit-task.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            loadUserProfile();
+            loadKanbanBoard();
+        });
+
+        async function showCreateTaskModal() {
+            // Cargar proyectos disponibles
+            await loadProyectosParaTarea();
+            document.getElementById('createTaskModal').style.display = 'block';
+        }
+
+        function closeCreateTaskModal() {
+            document.getElementById('createTaskModal').style.display = 'none';
+            document.getElementById('createTaskForm').reset();
+        }
+
+        async function loadProyectosParaTarea() {
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch(`${API_URL}/proyecto`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const proyectos = await response.json();
+
+                    const select = document.getElementById('taskProyectoId');
+                    select.innerHTML = '<option value="">Selecciona un proyecto...</option>';
+
+                    proyectos.forEach(proyecto => {
+                        const option = document.createElement('option');
+                        option.value = proyecto.idProyecto;
+                        option.textContent = `${proyecto.nombre} (${proyecto.codigoRegistro})`;
+                        select.appendChild(option);
+                    });
+
+                }
+            } catch (error) {
+                console.error('Error cargando proyectos:', error);
+            }
+        }
+
+        function closeTaskDetailsModal() {
+            document.getElementById('taskDetailsModal').style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>

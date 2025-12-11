@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ProyectoRepository extends JpaRepository<ProyectoModel, Long> {
@@ -14,4 +15,6 @@ public interface ProyectoRepository extends JpaRepository<ProyectoModel, Long> {
 
     @Query("SELECT p FROM ProyectoModel p WHERE p.responsable.id = :responsableId")
     List<ProyectoModel> findByResponsableId(@Param("responsableId") Long responsableId);
+
+    Optional<ProyectoModel> findByCodigoRegistro(String codigoRegistro);
 }

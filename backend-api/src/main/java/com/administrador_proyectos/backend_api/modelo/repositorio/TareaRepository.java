@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TareaRepository extends JpaRepository<TareaModel, Long> {
@@ -17,5 +18,8 @@ public interface TareaRepository extends JpaRepository<TareaModel, Long> {
     List<TareaModel> findByAsignadoId(@Param("idUsuario") Long idUsuario);
 
     List<TareaModel> findByEstado(String estado);
+
     List<TareaModel> findByPrioridad(String prioridad);
+
+    Optional<TareaModel> findByCodigoTarea(String codigoTarea);
 }

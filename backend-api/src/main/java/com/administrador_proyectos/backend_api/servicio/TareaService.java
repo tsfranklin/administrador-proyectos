@@ -22,8 +22,8 @@ public class TareaService {
     private final UsuarioRepository usuarioRepository;
 
     public TareaService(TareaRepository tareaRepository,
-                        ProyectoRepository proyectoRepository,
-                        UsuarioRepository usuarioRepository) {
+            ProyectoRepository proyectoRepository,
+            UsuarioRepository usuarioRepository) {
         this.tareaRepository = tareaRepository;
         this.proyectoRepository = proyectoRepository;
         this.usuarioRepository = usuarioRepository;
@@ -78,6 +78,9 @@ public class TareaService {
         tarea.setProyecto(proyecto);
         tarea.setAsignado(asignado);
 
+        // Generar código único formato TASK-XXXXXX
+        tarea.setCodigoTarea(generarCodigoTarea());
+
         return TareaResponseDTO.fromEntity(tareaRepository.save(tarea));
     }
 
@@ -106,11 +109,16 @@ public class TareaService {
                     }
 
                     // Actualizar otros campos
-                    if (requestDTO.titulo() != null) existingTarea.setTitulo(requestDTO.titulo());
-                    if (requestDTO.descripcion() != null) existingTarea.setDescripcion(requestDTO.descripcion());
-                    if (requestDTO.fechaLimite() != null) existingTarea.setFechaLimite(requestDTO.fechaLimite());
-                    if (requestDTO.prioridad() != null) existingTarea.setPrioridad(TareaModel.Prioridad.valueOf(requestDTO.prioridad()));
-                    if (requestDTO.estado() != null) existingTarea.setEstado(TareaModel.Estado.valueOf(requestDTO.estado()));
+                    if (requestDTO.titulo() != null)
+                        existingTarea.setTitulo(requestDTO.titulo());
+                    if (requestDTO.descripcion() != null)
+                        existingTarea.setDescripcion(requestDTO.descripcion());
+                    if (requestDTO.fechaLimite() != null)
+                        existingTarea.setFechaLimite(requestDTO.fechaLimite());
+                    if (requestDTO.prioridad() != null)
+                        existingTarea.setPrioridad(TareaModel.Prioridad.valueOf(requestDTO.prioridad()));
+                    if (requestDTO.estado() != null)
+                        existingTarea.setEstado(TareaModel.Estado.valueOf(requestDTO.estado()));
 
                     return TareaResponseDTO.fromEntity(tareaRepository.save(existingTarea));
                 });
@@ -133,5 +141,30 @@ public class TareaService {
     @Transactional
     public void deleteById(Long id) {
         tareaRepository.deleteById(id);
+    }
+
+    /**
+     * Genera un código único para la tarea en formato TASK-XXXXXX
+     * donde X son caracteres alfanuméricos aleatorios
+     */
+    private String generarCodigoTarea() {
+        String codigo;
+        do {
+            codigo = "TASK-" + generarCodigoAleatorio(6);
+        } while (tareaRepository.findByCodigoTarea(codigo).isPresent());
+        return codigo;
+    }
+
+    /**
+     * Genera una cadena aleatoria de caracteres alfanuméricos
+     */
+    private String generarCodigoAleatorio(int longitud) {
+        String caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        StringBuilder codigo = new StringBuilder();
+        java.util.Random random = new java.util.Random();
+        for (int i = 0; i < longitud; i++) {
+            codigo.append(caracteres.charAt(random.nextInt(caracteres.length())));
+        }
+        return codigo.toString();
     }
 }

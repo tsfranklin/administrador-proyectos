@@ -52,11 +52,14 @@ public class ProyectoService {
         ProyectoModel proyecto = new ProyectoModel();
         proyecto.setNombre(requestDTO.nombre());
         proyecto.setDescripcion(requestDTO.descripcion());
-        proyecto.setFechaInicio(requestDTO.fechaInicio() != null ?
-                requestDTO.fechaInicio() : java.time.LocalDateTime.now());
+        proyecto.setFechaInicio(
+                requestDTO.fechaInicio() != null ? requestDTO.fechaInicio() : java.time.LocalDateTime.now());
         proyecto.setFechaFin(requestDTO.fechaFin());
         proyecto.setActivo(requestDTO.activo() != null ? requestDTO.activo() : true);
         proyecto.setResponsable(responsable);
+
+        // Generar código único formato PROJ-XXXXXX
+        proyecto.setCodigoRegistro(generarCodigoProyecto());
 
         return ProyectoResponseDTO.fromEntity(proyectoRepository.save(proyecto));
     }
@@ -74,11 +77,16 @@ public class ProyectoService {
                     }
 
                     // Actualizar otros campos
-                    if (requestDTO.nombre() != null) existingProyecto.setNombre(requestDTO.nombre());
-                    if (requestDTO.descripcion() != null) existingProyecto.setDescripcion(requestDTO.descripcion());
-                    if (requestDTO.fechaInicio() != null) existingProyecto.setFechaInicio(requestDTO.fechaInicio());
-                    if (requestDTO.fechaFin() != null) existingProyecto.setFechaFin(requestDTO.fechaFin());
-                    if (requestDTO.activo() != null) existingProyecto.setActivo(requestDTO.activo());
+                    if (requestDTO.nombre() != null)
+                        existingProyecto.setNombre(requestDTO.nombre());
+                    if (requestDTO.descripcion() != null)
+                        existingProyecto.setDescripcion(requestDTO.descripcion());
+                    if (requestDTO.fechaInicio() != null)
+                        existingProyecto.setFechaInicio(requestDTO.fechaInicio());
+                    if (requestDTO.fechaFin() != null)
+                        existingProyecto.setFechaFin(requestDTO.fechaFin());
+                    if (requestDTO.activo() != null)
+                        existingProyecto.setActivo(requestDTO.activo());
 
                     return ProyectoResponseDTO.fromEntity(proyectoRepository.save(existingProyecto));
                 });
@@ -97,5 +105,30 @@ public class ProyectoService {
                     return ProyectoResponseDTO.fromEntity(proyectoRepository.save(proyecto));
                 })
                 .orElseThrow(() -> new RuntimeException("Proyecto no encontrado"));
+    }
+
+    /**
+     * Genera un código único para el proyecto en formato PROJ-XXXXXX
+     * donde X son caracteres alfanuméricos aleatorios
+     */
+    private String generarCodigoProyecto() {
+        String codigo;
+        do {
+            codigo = "PROJ-" + generarCodigoAleatorio(6);
+        } while (proyectoRepository.findByCodigoRegistro(codigo).isPresent());
+        return codigo;
+    }
+
+    /**
+     * Genera una cadena aleatoria de caracteres alfanuméricos
+     */
+    private String generarCodigoAleatorio(int longitud) {
+        String caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        StringBuilder codigo = new StringBuilder();
+        java.util.Random random = new java.util.Random();
+        for (int i = 0; i < longitud; i++) {
+            codigo.append(caracteres.charAt(random.nextInt(caracteres.length())));
+        }
+        return codigo.toString();
     }
 }
